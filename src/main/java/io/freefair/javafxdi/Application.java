@@ -5,8 +5,10 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.log4j.*;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
+import org.reflections.scanners.ResourcesScanner;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
@@ -29,6 +31,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @SuppressWarnings({"SameParameterValue", "WeakerAccess", "unused"})
 @Slf4j
@@ -59,6 +62,26 @@ public class Application extends javafx.application.Application {
 		launch(args);
 	}
 
+	private static void initSlf4J(String level) {
+		Level threshold = Level.toLevel(level);
+
+		ConsoleAppender console = new ConsoleAppender(); //create appender
+		//configure the appender
+		String PATTERN = "%d [%p|%c|%C{1}] %m%n";
+
+		ConsoleAppender appender = new ConsoleAppender();
+		appender.setLayout(new PatternLayout(PATTERN));
+		appender.setTarget(ConsoleAppender.SYSTEM_OUT);
+		appender.setThreshold(threshold);
+		appender.setName("ConsoleAppender");
+		appender.activateOptions();
+
+		//add appender to any Logger (here is root)
+		Logger.getRootLogger().removeAllAppenders();
+		Logger.getRootLogger().addAppender(appender);
+		Logger.getRootLogger().setLevel(threshold);
+	}
+
 	public Application() {
 		if(instance != null) throw new RuntimeException("Only one application is allowed!");
 		instance = this;
@@ -74,8 +97,11 @@ public class Application extends javafx.application.Application {
 
 	@Override
 	public void start(Stage stage) {
+		initSlf4J("INFO");
 		environment = new StandardEnvironment();
 		initEnvironment(environment);
+		String property = environment.getProperty("logging.level", "INFO");
+		initSlf4J(property);
 		context = new AnnotationConfigApplicationContext();
 		context.setEnvironment(environment);
 		initContext(context);
@@ -96,7 +122,16 @@ public class Application extends javafx.application.Application {
 	}
 
 	private void initEnvironment(ConfigurableEnvironment environment) {
-		//environment.getPropertySources().addFirst(new ResourcePropertySource());
+		Set<String> resources = getReflections().getResources(Pattern.compile("(.*)\\.properties"));
+		for (String resource :
+				resources) {
+			try {
+				log.debug("Adding resource " + resource + " to environment.");
+				environment.getPropertySources().addFirst(new ResourcePropertySource(resource));
+			} catch (Exception ex) {
+				log.error("Error in environment initialization", ex);
+			}
+		}
 	}
 
 	private void initContext(AnnotationConfigApplicationContext context) {
@@ -117,7 +152,8 @@ public class Application extends javafx.application.Application {
 			urls.addAll(ClasspathHelper.forManifest());
 			org.reflections.Configuration configuration = new ConfigurationBuilder()
 					.addClassLoader(Thread.currentThread().getContextClassLoader())
-					.setScanners(new SubTypesScanner(false), new TypeAnnotationsScanner(), new MethodAnnotationsScanner())
+					.setScanners(new SubTypesScanner(false), new TypeAnnotationsScanner(), new MethodAnnotationsScanner(),
+								new ResourcesScanner())
 					.setUrls(urls);
 			this.reflections = new Reflections(configuration);
 		}
