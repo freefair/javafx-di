@@ -1,11 +1,15 @@
 buildscript {
-	dependencies {
-		classpath group: 'de.dynamicfiles.projects.gradle.plugins', name: 'javafx-gradle-plugin', version: '8.8.2'
-	}
-
 	repositories {
 		mavenLocal()
 		mavenCentral()
+		maven {
+			url "https://plugins.gradle.org/m2/"
+		}
+	}
+
+	dependencies {
+		classpath 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
+		classpath "net.ltgt.gradle:gradle-apt-plugin:0.18"
 	}
 }
 
@@ -13,12 +17,15 @@ group 'io.freefair'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: "net.ltgt.apt"
 
-sourceCompatibility = 1.8
+sourceCompatibility = 1.11
 
 repositories {
 	mavenCentral()
 }
+
+ext.platform = osdetector.os == 'osx' ? 'mac' : osdetector.os == 'windows' ? 'win' : osdetector.os
 
 dependencies {
 	testCompile group: 'junit', name: 'junit', version: '4.12'
@@ -27,5 +34,21 @@ dependencies {
 	compile 'org.slf4j:slf4j-log4j12:1.7.25'
 	compile 'log4j:log4j:1.2.17'
 	compile 'org.reflections:reflections:0.9.10'
-	compileOnly 'org.projectlombok:lombok:1.16.20'
+
+	compile "org.openjfx:javafx-base:11:$platform"
+	compile "org.openjfx:javafx-fxml:11:$platform"
+	compile "org.openjfx:javafx-graphics:11:$platform"
+	compile "org.openjfx:javafx-controls:11:$platform"
+
+	compileOnly 'org.projectlombok:lombok:1.18.2'
+	annotationProcessor 'org.projectlombok:lombok:1.18.2'
 }
+
+/*compileJava {
+	doFirst {
+		options.compilerArgs = [
+				'--module-path', classpath.asPath,
+				'--add-modules', 'javafx.controls,javafx.graphics,javafx.fxml,javafx.base'
+		]
+	}
+}*/
