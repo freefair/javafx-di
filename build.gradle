@@ -33,7 +33,7 @@ dependencies {
 	compile 'org.springframework:spring-context:5.0.3.RELEASE'
 	compile 'org.slf4j:slf4j-log4j12:1.7.25'
 	compile 'log4j:log4j:1.2.17'
-	compile 'org.reflections:reflections:0.9.10'
+	compile group: 'io.github.classgraph', name: 'classgraph', version: '4.4.7'
 
 	compile "org.openjfx:javafx-base:11:$platform"
 	compile "org.openjfx:javafx-fxml:11:$platform"

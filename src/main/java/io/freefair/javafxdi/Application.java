@@ -1,37 +1,21 @@
 package io.freefair.javafxdi;
 
+import io.github.classgraph.*;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.log4j.*;
-import org.reflections.Reflections;
-import org.reflections.scanners.MethodAnnotationsScanner;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.Environment;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.support.ResourcePropertySource;
-import org.springframework.stereotype.Component;
-import org.springframework.util.ReflectionUtils;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @SuppressWarnings({"SameParameterValue", "WeakerAccess", "unused"})
@@ -50,7 +34,7 @@ public abstract class Application extends javafx.application.Application {
 	@Getter
 	private ConfigurableEnvironment environment;
 
-	private Reflections reflections;
+	private ScanResult reflections;
 
 	@Getter
 	private static Application instance;
@@ -126,12 +110,12 @@ public abstract class Application extends javafx.application.Application {
 	}
 
 	private void initEnvironment(ConfigurableEnvironment environment) {
-		Set<String> resources = getReflections().getResources(Pattern.compile("(.*)\\.properties"));
-		for (String resource :
+		ResourceList resources = getReflections().getResourcesMatchingPattern(Pattern.compile("(.*)\\.properties"));
+		for (Resource resource :
 				resources) {
 			try {
 				log.debug("Adding resource " + resource + " to environment.");
-				environment.getPropertySources().addFirst(new ResourcePropertySource(resource));
+				environment.getPropertySources().addFirst(new ResourcePropertySource(resource.getPath()));
 			} catch (Exception ex) {
 				log.error("Error in environment initialization", ex);
 			}
@@ -139,27 +123,24 @@ public abstract class Application extends javafx.application.Application {
 	}
 
 	private void initContext(AnnotationConfigApplicationContext context) {
-		Reflections reflections = getReflections();
-		Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(Configuration.class);
+		var reflections = getReflections();
+		ClassInfoList typesAnnotatedWith = reflections.getClassesWithAnnotation(Configuration.class.getCanonicalName());
 		typesAnnotatedWith.forEach(i -> {
-			if(!i.getTypeName().startsWith("org.springframework"))
-				context.register(i);
+			try {
+				if (!i.getName().startsWith("org.springframework"))
+					context.register(Class.forName(i.getName()));
+			} catch (Exception ex) { /* ignored */ }
 		});
 		context.setClassLoader(Thread.currentThread().getContextClassLoader());
 		context.setResourceLoader(new DefaultResourceLoader(Thread.currentThread().getContextClassLoader()));
 	}
 
-	private Reflections getReflections() {
+	private ScanResult getReflections() {
 		if(this.reflections == null) {
-			Collection<URL> urls = new ArrayList<>(ClasspathHelper.forClassLoader(Thread.currentThread().getContextClassLoader()));
-			urls.addAll(ClasspathHelper.forClassLoader(Application.class.getClassLoader()));
-			urls.addAll(ClasspathHelper.forManifest());
-			org.reflections.Configuration configuration = new ConfigurationBuilder()
+			this.reflections = new ClassGraph()
 					.addClassLoader(Thread.currentThread().getContextClassLoader())
-					.setScanners(new SubTypesScanner(false), new TypeAnnotationsScanner(), new MethodAnnotationsScanner(),
-								new ResourcesScanner())
-					.setUrls(urls);
-			this.reflections = new Reflections(configuration);
+					.enableAllInfo()
+					.scan();
 		}
 		return this.reflections;
 	}
