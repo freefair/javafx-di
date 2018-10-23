@@ -30,12 +30,13 @@ import org.springframework.util.ReflectionUtils;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 @SuppressWarnings({"SameParameterValue", "WeakerAccess", "unused"})
 @Slf4j
-public class Application extends javafx.application.Application {
+public abstract class Application extends javafx.application.Application {
 	private static String applicationName;
 	private static String mainFxml;
 	private static String[] args;
@@ -54,12 +55,14 @@ public class Application extends javafx.application.Application {
 	@Getter
 	private static Application instance;
 
-	protected static void run(String applicationName, String mainFxml, String args[]) {
+	private List<String> styles = new ArrayList<>();
+
+	protected static void run(Class<? extends Application> clazz, String applicationName, String mainFxml, String args[]) {
 		Application.applicationName = applicationName;
 		Application.mainFxml = mainFxml;
 		Application.args = args;
 
-		launch(args);
+		launch(clazz, args);
 	}
 
 	private static void initSlf4J(String level) {
@@ -110,6 +113,7 @@ public class Application extends javafx.application.Application {
 		Parent rootNode = JavaFXHelper.loadFile(mainFxml);
 
 		Scene scene = new Scene(rootNode, width, height);
+		scene.getStylesheets().addAll(styles);
 		initScene(scene);
 
 		stage.setTitle(applicationName);
@@ -163,6 +167,13 @@ public class Application extends javafx.application.Application {
 	@Override
 	public void stop() {
 
+	}
+
+	protected void addStylesheet(String stylesheet) {
+		log.debug("Adding stylesheet: " + stylesheet);
+		URL resource = Thread.currentThread().getContextClassLoader().getResource(stylesheet);
+		if(resource == null) throw new IllegalArgumentException("Stylesheet not found!");
+		styles.add(resource.toExternalForm());
 	}
 
 	protected void initParams() {
