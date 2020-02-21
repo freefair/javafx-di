@@ -130,6 +130,7 @@ public abstract class Application extends javafx.application.Application {
 	}
 
 	private void initContext(AnnotationConfigApplicationContext context) {
+
 		ClassInfoList typesAnnotatedWith = getScanResult().getClassesWithAnnotation(Configuration.class.getCanonicalName());
 		typesAnnotatedWith.forEach(i -> {
 			if(!i.getPackageName().startsWith("org.springframework"))
