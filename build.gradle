@@ -9,17 +9,17 @@ buildscript {
 
 	dependencies {
 		classpath 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
-		classpath "net.ltgt.gradle:gradle-apt-plugin:0.18"
 	}
+}
+plugins {
+	id 'java-library'
+	id "io.freefair.lombok" version "5.0.0-rc2"
 }
 
 group 'io.freefair'
 version '1.0-SNAPSHOT'
 
-apply plugin: 'java'
-apply plugin: "net.ltgt.apt"
-
-sourceCompatibility = 1.11
+sourceCompatibility = 1.13
 
 repositories {
 	mavenCentral()
@@ -28,20 +28,17 @@ repositories {
 ext.platform = osdetector.os == 'osx' ? 'mac' : osdetector.os == 'windows' ? 'win' : osdetector.os
 
 dependencies {
-	testCompile group: 'junit', name: 'junit', version: '4.12'
-	compile 'org.springframework:spring-core:5.0.3.RELEASE'
-	compile 'org.springframework:spring-context:5.0.3.RELEASE'
-	compile 'org.slf4j:slf4j-log4j12:1.7.25'
-	compile 'log4j:log4j:1.2.17'
-	compile 'org.reflections:reflections:0.9.10'
+	testImplementation group: 'junit', name: 'junit', version: '4.12'
+	api 'org.springframework:spring-core:5.0.3.RELEASE'
+	api 'org.springframework:spring-context:5.0.3.RELEASE'
+	api 'org.slf4j:slf4j-log4j12:1.7.25'
+	api 'log4j:log4j:1.2.17'
+	api 'io.github.classgraph:classgraph:4.8.65'
 
-	compile "org.openjfx:javafx-base:11:$platform"
-	compile "org.openjfx:javafx-fxml:11:$platform"
-	compile "org.openjfx:javafx-graphics:11:$platform"
-	compile "org.openjfx:javafx-controls:11:$platform"
-
-	compileOnly 'org.projectlombok:lombok:1.18.2'
-	annotationProcessor 'org.projectlombok:lombok:1.18.2'
+	api "org.openjfx:javafx-base:13.0.2:$platform"
+	api "org.openjfx:javafx-fxml:13.0.2:$platform"
+	api "org.openjfx:javafx-graphics:13.0.2:$platform"
+	api "org.openjfx:javafx-controls:13.0.2:$platform"
 }
 
 /*compileJava {

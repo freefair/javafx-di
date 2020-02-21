@@ -8,6 +8,7 @@ import javafx.util.Callback;
 
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 public class JavaFXHelper {
@@ -27,7 +28,7 @@ public class JavaFXHelper {
 
 	public static Parent loadFile(String filename) {
 		try {
-			return loader().load(Thread.currentThread().getContextClassLoader().getResourceAsStream(filename));
+			return loader().load(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResourceAsStream(filename)));
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
